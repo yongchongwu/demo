@@ -1,0 +1,66 @@
+<form name="editForm" role="form" novalidate (ngSubmit)="save()" #editForm="ngForm">
+
+    <div class="modal-header">
+        <h4 class="modal-title" id="myScoreLabel" jhiTranslate="demoApp.score.home.createOrEditLabel">Create or edit a Score</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true"
+                (click)="clear()">&times;</button>
+    </div>
+    <div class="modal-body">
+        <jhi-alert-error></jhi-alert-error>
+        <div class="form-group" [hidden]="!score.id">
+            <label for="id" jhiTranslate="global.field.id">ID</label>
+            <input type="text" class="form-control" id="id" name="id"
+                   [(ngModel)]="score.id" readonly />
+        </div>
+        <div class="form-group">
+            <label class="form-control-label" jhiTranslate="demoApp.score.score" for="field_score">Score</label>
+            <input type="number" class="form-control" name="score" id="field_score"
+                [(ngModel)]="score.score" required />
+            <div [hidden]="!(editForm.controls.score?.dirty && editForm.controls.score?.invalid)">
+                <small class="form-text text-danger"
+                   [hidden]="!editForm.controls.score?.errors?.required" jhiTranslate="entity.validation.required">
+                   This field is required.
+                </small>
+                <small class="form-text text-danger"
+                    [hidden]="!editForm.controls.score?.errors?.number" jhiTranslate="entity.validation.number">
+                    This field should be a number.
+                </small>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-control-label" jhiTranslate="demoApp.score.student" for="field_student">Student</label>
+            <select class="form-control" id="field_student" name="student" [(ngModel)]="score.student"  required>
+                <option *ngIf="!editForm.value.student" [ngValue]="null" selected></option>
+                <option [ngValue]="StudentOption.id === score.student?.id ? score.student : StudentOption" *ngFor="let StudentOption of students; trackBy: trackStudentById">{{StudentOption.id}}</option>
+            </select>
+        </div>
+        <div [hidden]="!(editForm.controls.student?.dirty && editForm.controls.student?.invalid)">
+            <small class="form-text text-danger"
+                [hidden]="!editForm.controls.student?.errors?.required" jhiTranslate="entity.validation.required">
+                This field is required.
+            </small>
+        </div>
+        <div class="form-group">
+            <label class="form-control-label" jhiTranslate="demoApp.score.course" for="field_course">Course</label>
+            <select class="form-control" id="field_course" name="course" [(ngModel)]="score.course"  required>
+                <option *ngIf="!editForm.value.course" [ngValue]="null" selected></option>
+                <option [ngValue]="CourseOption.id === score.course?.id ? score.course : CourseOption" *ngFor="let CourseOption of courses; trackBy: trackCourseById">{{CourseOption.id}}</option>
+            </select>
+        </div>
+        <div [hidden]="!(editForm.controls.course?.dirty && editForm.controls.course?.invalid)">
+            <small class="form-text text-danger"
+                [hidden]="!editForm.controls.course?.errors?.required" jhiTranslate="entity.validation.required">
+                This field is required.
+            </small>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" (click)="clear()">
+            <span class="fa fa-ban"></span>&nbsp;<span jhiTranslate="entity.action.cancel">Cancel</span>
+        </button>
+        <button type="submit" [disabled]="editForm.form.invalid || isSaving" class="btn btn-primary">
+            <span class="fa fa-save"></span>&nbsp;<span jhiTranslate="entity.action.save">Save</span>
+        </button>
+    </div>
+</form>
