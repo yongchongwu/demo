@@ -28,9 +28,9 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
         classes = @ConstructorResult(
             targetClass = ScoreDTO.class,
             columns = {
-                @ColumnResult(name = "stuName"),
-                @ColumnResult(name = "courseName"),
-                @ColumnResult(name = "score")
+                @ColumnResult(name = "stuName",type = String.class),
+                @ColumnResult(name = "courseName",type = String.class),
+                @ColumnResult(name = "score",type = Double.class)
             }
         )
     )
