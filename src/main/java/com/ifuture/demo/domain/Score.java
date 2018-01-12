@@ -8,13 +8,12 @@ import javax.persistence.Column;
 import javax.persistence.ColumnResult;
 import javax.persistence.ConstructorResult;
 import javax.persistence.Entity;
-import javax.persistence.EntityResult;
-import javax.persistence.FieldResult;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.SqlResultSetMapping;
+import javax.persistence.SqlResultSetMappings;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.Cache;
@@ -23,17 +22,19 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 /**
  * A Score.
  */
-@SqlResultSetMapping(
-    name = "ScoreDTO",
-    classes = @ConstructorResult(
-        targetClass = ScoreDTO.class,
-        columns = {
-            @ColumnResult(name = "stuName"),
-            @ColumnResult(name = "courseName"),
-            @ColumnResult(name = "score")
-        }
+@SqlResultSetMappings({
+    @SqlResultSetMapping(
+        name = "ScoreDTO",
+        classes = @ConstructorResult(
+            targetClass = ScoreDTO.class,
+            columns = {
+                @ColumnResult(name = "stuName"),
+                @ColumnResult(name = "courseName"),
+                @ColumnResult(name = "score")
+            }
+        )
     )
-)
+})
 @Entity
 @Table(name = "tb_score")
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

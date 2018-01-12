@@ -1,10 +1,14 @@
 package com.ifuture.demo.service;
 
+import com.ifuture.demo.config.ApplicationProperties;
 import com.ifuture.demo.domain.Score;
 import com.ifuture.demo.repository.ScoreRepository;
 import com.ifuture.demo.service.dto.ScoreDTO;
+import com.ifuture.demo.util.SqlUtil;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
@@ -17,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -40,6 +45,9 @@ public class ScoreService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ApplicationProperties applicationProperties;
 
     private final ScoreRepository scoreRepository;
 
@@ -191,17 +199,90 @@ public class ScoreService {
         sql = sql.append(where);
 
         Query query = entityManager.createNativeQuery(sql.toString(), "ScoreDTO");
-
-        int index=1;
-        for (Object param:params){
-            query.setParameter(index,param);
+        int index = 1;
+        for (Object param : params) {
+            query.setParameter(index, param);
             index++;
+        }
+        return query.getResultList();
+    }
+
+    public List<ScoreDTO> query7Scores(String stuName, String cname) {
+
+        StringBuilder sql = new StringBuilder(
+            "SELECT b.stu_name as stuName,c.cname as courseName,a.score as score "
+                + "FROM TB_SCORE a,TB_STUDENT b,TB_COURSE c "
+                + "WHERE a.student_id=b.id and a.course_id=c.id ");
+
+        Map<String, Object> params = new HashMap<>();
+
+        StringBuilder where = new StringBuilder("");
+        if (StringUtils.isNotBlank(stuName)) {
+            where.append(" and b.stu_name=:stu_name ");
+            params.put("stu_name", stuName);
+        }
+        if (StringUtils.isNotBlank(cname)) {
+            where.append(" and c.cname like :cname ");
+            params.put("cname", "%" + cname + "%");
+        }
+        sql = sql.append(where);
+
+        Query query = entityManager.createNativeQuery(sql.toString(), "ScoreDTO");
+
+       /* for(String key:params.keySet()){
+            query.setParameter(key,params.get(key));
+        }*/
+        for (Map.Entry entry : params.entrySet()) {
+            query.setParameter(entry.getKey().toString(), entry.getValue());
         }
 
         return query.getResultList();
     }
 
-    public List<ScoreDTO> query7Scores(String stuName, String cname) {
+    public Page query8Scores(String stuName, String cname, Pageable pageable) {
+
+        StringBuilder sql = new StringBuilder(
+            "SELECT b.stu_name as stuName,c.cname as courseName,a.score as score "
+                + "FROM TB_SCORE a,TB_STUDENT b,TB_COURSE c "
+                + "WHERE a.student_id=b.id and a.course_id=c.id ");
+
+        Map<String, Object> params = new HashMap<>();
+
+        StringBuilder where = new StringBuilder("");
+        if (StringUtils.isNotBlank(stuName)) {
+            where.append(" and b.stu_name=:stu_name ");
+            params.put("stu_name", stuName);
+        }
+        if (StringUtils.isNotBlank(cname)) {
+            where.append(" and c.cname like :cname ");
+            params.put("cname", "%" + cname + "%");
+        }
+        sql = sql.append(where);
+
+        //查询记录总数
+        Query countQuery = entityManager
+            .createNativeQuery("select count(*) from (" + sql.toString() + " )");
+        for (String key : params.keySet()) {
+            countQuery.setParameter(key, params.get(key));
+        }
+        Object totalObj = countQuery.getSingleResult();
+        Long totalNum = new Long(totalObj.toString());
+
+        //查询分页记录
+        Query query = entityManager.createNativeQuery(sql.toString(), "ScoreDTO");
+        for (String key : params.keySet()) {
+            query.setParameter(key, params.get(key));
+        }
+        query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
+        query.setMaxResults(pageable.getPageSize());
+
+        //构造分页结果
+        Page page = new PageImpl(query.getResultList(), pageable, totalNum);
+
+        return page;
+    }
+
+    public List<ScoreDTO> query9Scores(String stuName, String cname) {
         StringBuilder sql = new StringBuilder(
             "SELECT b.stu_name as stuName,c.cname as courseName,a.score as score "
                 + "FROM TB_SCORE a,TB_STUDENT b,TB_COURSE c "
@@ -223,5 +304,45 @@ public class ScoreService {
 
         return jdbcTemplate.query(sql.toString(), params.toArray(new Object[params.size()]),
             new BeanPropertyRowMapper(ScoreDTO.class));
+    }
+
+    public Page query10Scores(String stuName, String cname, Pageable pageable) {
+
+        StringBuilder sql = new StringBuilder(
+            "SELECT b.stu_name as stuName,c.cname as courseName,a.score as score "
+                + "FROM TB_SCORE a,TB_STUDENT b,TB_COURSE c "
+                + "WHERE a.student_id=b.id and a.course_id=c.id ");
+
+        List<Object> params = new ArrayList<Object>();
+
+        StringBuilder where = new StringBuilder("");
+        if (StringUtils.isNotBlank(stuName)) {
+            where.append(" and b.stu_name=? ");
+            params.add(stuName);
+
+        }
+        if (StringUtils.isNotBlank(cname)) {
+            where.append(" and c.cname like ? ");
+            params.add("%" + cname + "%");
+        }
+        sql = sql.append(where);
+
+        //查询记录总数
+        Long totalNum = jdbcTemplate
+            .queryForObject(
+                SqlUtil.makeCountSql(sql.toString(), applicationProperties.getDialect()),
+                params.toArray(new Object[params.size()]), Long.class);
+
+        //查询分页记录
+        List list = jdbcTemplate.query(SqlUtil
+                .makeScrollSql(sql.toString(), applicationProperties.getDialect(), pageable.getOffset(),
+                    pageable.getPageSize()),
+            params.toArray(new Object[params.size()]),
+            new BeanPropertyRowMapper(ScoreDTO.class));
+
+        //构造分页结果
+        Page page = new PageImpl(list, pageable, totalNum);
+
+        return page;
     }
 }
